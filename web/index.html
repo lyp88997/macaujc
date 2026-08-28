@@ -474,13 +474,41 @@ async function loadStatus(){
   }catch(e){mockMode()}
 }
 function fmtT(t){if(!t)return"--";try{return new Date(t).toLocaleString("zh-CN",{hour12:false})}catch(e){return t}}
+/* 倒计时归零→智能轮询新开奖(20s/次, 最长12分钟; 后端采集实测 1m44s~5m 入库) */
+let AUTO_POLL=null;
+function autoPollNewDraw(){
+  if(AUTO_POLL)return;  /* 已在轮询中, 不重复启动 */
+  const known=STATUS?.last_draw?.expect;
+  const started=Date.now();
+  $("#ov-cd").textContent="等待开奖...";
+  if($("#sb-next"))$("#sb-next").textContent="等待开奖...";
+  AUTO_POLL=setInterval(async()=>{
+    try{
+      const s=await api("/api/status");
+      if(s?.last_draw?.expect && s.last_draw.expect!==known){
+        clearInterval(AUTO_POLL);AUTO_POLL=null;
+        toast("🎉 新一期 "+s.last_draw.expect+" 已出");
+        await loadStatus();        /* 重挂倒计时+渲染最新一期 */
+        const page=document.querySelector("#nav a.on")?.dataset.page;
+        if(page==="draws")loadDraws(0);   /* 历史页联动刷新 */
+        return;
+      }
+      if(Date.now()-started>12*60*1000){  /* 12分钟超时: 官网未更新, 按下一期重挂倒计时 */
+        clearInterval(AUTO_POLL);AUTO_POLL=null;
+        const s2=await api("/api/status");
+        startCountdown(s2?.next_draw_at||new Date(Date.now()+864e5).toISOString());
+      }
+    }catch(e){/* 网络抖动: 下个周期再试 */}
+  },20000);
+}
 function startCountdown(target){
   if(CD_TIMER)clearInterval(CD_TIMER);
   const t=new Date(target).getTime();
   const tick=()=>{let d=t-Date.now();if(d<0)d=0;
     const h=String(Math.floor(d/36e5)).padStart(2,"0"),m=String(Math.floor(d/6e4)%60).padStart(2,"0"),s=String(Math.floor(d/1e3)%60).padStart(2,"0");
     const txt=`${h}:${m}:${s}`;
-    $("#ov-cd").textContent=txt;if($("#sb-next"))$("#sb-next").textContent=txt;};
+    $("#ov-cd").textContent=txt;if($("#sb-next"))$("#sb-next").textContent=txt;
+    if(d===0){clearInterval(CD_TIMER);CD_TIMER=null;autoPollNewDraw();}};
   tick();CD_TIMER=setInterval(tick,1000);
 }
 function renderLast(ld){
