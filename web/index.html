@@ -401,7 +401,7 @@ const WAVE={红:"w-red",蓝:"w-blue",绿:"w-green"};function esc(s){return Strin
 const NUM_WAVE={1:"红",2:"红",7:"红",8:"红",12:"红",13:"红",18:"红",19:"红",23:"红",24:"红",29:"红",30:"红",34:"红",35:"红",40:"红",45:"红",46:"红",
 3:"蓝",4:"蓝",9:"蓝",10:"蓝",14:"蓝",15:"蓝",20:"蓝",25:"蓝",26:"蓝",31:"蓝",36:"蓝",37:"蓝",41:"蓝",42:"蓝",47:"蓝",48:"蓝",
 5:"绿",6:"绿",11:"绿",16:"绿",17:"绿",21:"绿",22:"绿",27:"绿",28:"绿",32:"绿",33:"绿",38:"绿",39:"绿",43:"绿",44:"绿",49:"绿"};
-const waveClassOf=n=>WAVE[NUM_WAVE[+n]]||null;
+const waveClassOf=n=>NUM_WAVE[+n]||null;
 function toast(msg){let t=$("#copy-toast");
   if(!t){t=document.createElement("div");t.id="copy-toast";t.className="copy-toast";document.body.appendChild(t)}
   t.textContent=msg;t.classList.add("show");clearTimeout(t._tm);t._tm=setTimeout(()=>t.classList.remove("show"),1500)}

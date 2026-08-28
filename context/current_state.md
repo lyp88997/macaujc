@@ -1,5 +1,8 @@
 # 当前状态(Predictor 项目)
 
-## 2026-08-28 BATCH-010 完成: ✅ 细节调整上线
-- 总览 1-7 纵向排序(seq 徽标); 预测复制按钮放大加间距(手机平分整行)
-- 筛选波色复核: BATCH-009 已生效; 线上 seq 7 枚顺序 1234567, 2291 期稳
+## 2026-08-28 Akile 澳门部署完成: ✅ http://45.202.246.39 (端口80)
+- systemd: macaujc.service, enable --now, Restart=always, /opt/macaujc
+- 部署方式: tar-over-ssh(本机无 rsync); 1Panel 防火墙白名单模式, 80 在白名单
+- 三地实测: 本机 200/7ms + 法兰克福 OPEN + 本机 API ok; 2291 期完整
+- GitHub 已同步(bdf593c): deploy/akile-macau.service 入库
+- 旧容器版继续跑 http://10.5.0.2:8787
