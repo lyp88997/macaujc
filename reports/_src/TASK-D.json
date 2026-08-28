@@ -1,0 +1,25 @@
+{
+ "TASK_ID": "TASK-D",
+ "STATUS": "DONE",
+ "SUMMARY": "总监直做(同文件禁并行): 1) 修复历史开奖加载失败——根因 loadDraws 内 ball(n,{sm,...}) 的 sm 为未声明变量, 每行渲染抛 ReferenceError 被 catch 显示'加载失败'(后端 /api/draws 实测正常, 纯前端bug); 改 {sm:true} 修复。2) 挑码筛选结果区上置为全宽卡(在条件面板上方), 结果球带 hover 动效+单击复制, 新增'复制全部'按钮。3) 预测推荐新增'推荐组合'栏: 复制号码/复制含理由详单两种, 组合球单击可复制; 另总览最新期、智能组号球均带单击复制。基建: toast 提示、clipboard API+execCommand 降级、data-copy 事件委托。",
+ "CHANGES": "web/index.html: sm bug 修复 + CSS(ball.clickable/copy-toast/copy-ico) + ball() 支持 copy 参数 + toast/copyText/事件委托 + 挑码结果区上置 + pd-combo-card 组合栏 + runFilter/doPredict/genPick/renderLast 更新。deploy/docker-compose.yml+Dockerfile+app/config.py: 卷挂载路径纠偏。",
+ "FINDINGS": [
+  {
+   "severity": "高",
+   "file": "web/index.html",
+   "issue": "loadDraws 使用未声明变量 sm(手误简写), 历史开奖页必然抛 ReferenceError 显示加载失败",
+   "needs_change": false,
+   "suggestion": "已修复为 {sm:true}, 本地实测 /api/draws 数据正常渲染路径无异常"
+  },
+  {
+   "severity": "高",
+   "file": "deploy/docker-compose.yml",
+   "issue": "持久化卷挂载点 /app/app/data 与容器真实 DB 路径 /app/data 不一致, 首轮部署数据写入容器临时层, 容器重建即丢 2291 期(重部署 step5 输出 total_draws:0 实证)",
+   "needs_change": false,
+   "suggestion": "已修: compose 显式 MACAUJC_DB=/app/data/macaujc.db + 卷改挂 /app/data + 删除 Dockerfile 错误 VOLUME 声明; 终验宿主机 /opt/macaujc-predictor/app/data/ 出现 macaujc.db+WAL"
+  }
+ ],
+ "TEST_RESULT": "node --check JS 语法 OK(修掉 2 处模板串语法错); DOM id 完整性 0 缺失; 10 项新功能标记全部在位; 本地服务实测新页面 7 处特征命中 + /api/draws 端到端 ok(total 2291); 部署后外部 8787 页面特征 11 处命中, 回填 probe1 即 2291 期。",
+ "RISKS": "1) 复制功能在非 HTTPS 且老浏览器(无 clipboard API)走 execCommand 降级, 极端环境可能失败但有 toast 反馈; 2) 首次重部署后 DB 为 root 属主(容器 root 运行, 无影响)。",
+ "NEXT_ACTION": "TASK-E 重部署已随本批完成, 全部验证通过。"
+}
