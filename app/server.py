@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import config, db, fetcher, http_api, predictors, stats_engine, zodiac_wuxing
 
-__version__ = "1.0.0"
+__version__ = "1.1.9"
 
 
 def main() -> None:

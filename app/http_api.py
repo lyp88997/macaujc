@@ -44,7 +44,7 @@ def make_server(host: str, port: int) -> ThreadingHTTPServer:
 
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
-    server_version = "macaujc-predictor/1.0.0"
+    server_version = "macaujc-predictor/1.1.9"
 
     # ---------- 基础输出 ----------
 
@@ -174,7 +174,7 @@ class Handler(BaseHTTPRequestHandler):
         self._json({
             "ok": True,
             "service": "macaujc-predictor",
-            "version": "1.0.0",
+            "version": "1.1.9",
             "last_draw": {
                 "expect": newest["expect"] if newest else None,
                 "open_time": newest["open_time"] if newest else None,
