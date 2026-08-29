@@ -1,7 +1,7 @@
 # 当前状态(Predictor 项目)
 
-## 2026-08-29 BATCH-015 完成: ✅ 玻璃双主题上线(默认浅色)
-- CSS变量重构: :root浅色玻璃默认+html[data-theme=dark]深色覆盖; 30刀落位
-- 切换: 头部🌙/☀️+localStorage记忆+head防闪色; 玻璃: 卡片blur14/头部16/导航12+饱和度
-- 红线无回归: 完整词标注/波色链/T2S; 线上md5一致e115f14a; GitHub b516177
-- 经验: 页面2个script块须逐块提取; 主题段单独eval测试
+## 2026-08-29 BATCH-016 完成: ✅ 挑码/预测交互+导航顺序上线
+- 单击球=复制全部(data-copyall 代理, 挑码/预测两页); 清空按钮放大; 智能组号整卡删除+死代码清理
+- 预测页: 权重40文案+模式去英文(value不动); 统计分析调至导航末位
+- 双实例 md5 一致 e6f22d39/2292期; GitHub cb74a00
+- 测试台坑: Node26 navigator 只读 getter→defineProperty 覆写; 切片 lastIndexOf 切注释起点
