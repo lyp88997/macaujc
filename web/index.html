@@ -131,18 +131,18 @@ tr:hover td{background:rgba(255,255,255,.03)}
 /* ===== 条形 ===== */
 .bar-row{display:flex;align-items:center;gap:10px;padding:6px 0}
 .bar-label{width:64px;display:flex;align-items:center;gap:6px;flex:none;font-size:13px}
-.bar-track{flex:1;height:16px;background:rgba(255,255,255,.05);border-radius:8px;overflow:hidden}
+.bar-track{flex:1;max-width:460px;height:16px;background:rgba(255,255,255,.05);border-radius:8px;overflow:hidden}
 .bar-fill{height:100%;border-radius:8px;background:linear-gradient(90deg,var(--acc),var(--acc2));
   box-shadow:0 0 10px rgba(109,124,255,.4);transition:width .5s ease}
-.bar-val{width:92px;flex:none;font-size:12px;color:var(--dim);text-align:right}
+.bar-val{width:158px;white-space:nowrap;flex:none;font-size:12px;color:var(--dim);text-align:right}
 
 /* ===== 遗漏 ===== */
 .om-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
 .om-item{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:13px}
 .om-item .k{width:52px;flex:none;display:flex;align-items:center;gap:6px}
-.om-item .track{flex:1;height:10px;background:rgba(255,255,255,.05);border-radius:5px;overflow:hidden}
+.om-item .track{flex:1;max-width:320px;height:12px;background:rgba(255,255,255,.05);border-radius:5px;overflow:hidden}
 .om-item .fill{height:100%;background:linear-gradient(90deg,#ffb14d,#ff4d5e);border-radius:5px}
-.om-item .v{width:104px;flex:none;text-align:right;color:var(--dim);font-size:11.5px}
+.om-item .v{width:150px;display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none;text-align:right;color:var(--dim);font-size:11.5px}
 .badge-hot{font-size:10px;color:#ffd280;border:1px solid rgba(255,177,77,.45);border-radius:6px;padding:1px 5px;margin-left:4px}
 
 /* ===== 预测卡 ===== */
@@ -396,7 +396,7 @@ tr:hover td{background:rgba(255,255,255,.03)}
 /* ================= 基础 ================= */
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 let MOCK=false;
-const WAVE={红:"w-red",蓝:"w-blue",绿:"w-green"};function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+const WAVE={红:"w-red",蓝:"w-blue",绿:"w-green"};const T2S={"龍":"龙","馬":"马","雞":"鸡","豬":"猪"};const T2S_RE=/[龍馬雞豬]/g;function esc(s){return String(s).replace(T2S_RE,c=>T2S[c]).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 /* 号码→波色类(静态表, 选号组号等无 it 上下文时复用) */
 const NUM_WAVE={1:"红",2:"红",7:"红",8:"红",12:"红",13:"红",18:"红",19:"红",23:"红",24:"红",29:"红",30:"红",34:"红",35:"红",40:"红",45:"红",46:"红",
 3:"蓝",4:"蓝",9:"蓝",10:"蓝",14:"蓝",15:"蓝",20:"蓝",25:"蓝",26:"蓝",31:"蓝",36:"蓝",37:"蓝",41:"蓝",42:"蓝",47:"蓝",48:"蓝",
@@ -430,7 +430,7 @@ async function apiPost(path,body){return api(path,{method:"POST",body:JSON.strin
 let MOCK_DATA=null;
 function buildMock(){
   const nums=["07","12","18","23","29","34","40","45","03","09","15","26","31","42","48","05","11","16","22","28","33","39","44"];
-  const waves=["红","蓝","绿"],zo=["鼠","牛","虎","兔","龍","蛇","馬","羊","猴","雞","狗","豬"],wx=["金","木","水","火","土"];
+  const waves=["红","蓝","绿"],zo=["鼠","牛","虎","兔","龙","蛇","马","羊","猴","鸡","狗","猪"],wx=["金","木","水","火","土"];
   const draws=[];let seed=42;const rnd=()=>((seed=seed*1103515245+12345>>>0)%10000)/10000;
   for(let i=0;i<14;i++){const six=[];while(six.length<6){const n=nums[Math.floor(rnd()*nums.length)];if(!six.includes(n))six.push(n)}
     draws.push({expect:String(2026200-i),open_time:`2026-08-${20-i>0?20-i:20} 21:32:32`,codes:six,special:nums[(i*7)%nums.length]});}
@@ -632,10 +632,10 @@ async function doOmit(){
         ${rows.slice(0,scope==="number"||dim==="number"?49:rows.length).map(r=>{
           const pct=Math.min(100,(r.omission/ (r.max_omission||1))*100);
           const hot=r.avg_omission&&r.omission>=r.avg_omission*1.5;
-          return `<div class="om-item"><div class="k">${dim==="number"?`<span class="ball sm">${esc(r.key)}</span>`:
+          return `<div class="om-item"><div class="k">${dim==="number"?`<span class="ball sm ${WAVE[waveClassOf(r.key)]||"grey"}">${esc(r.key)}</span>`:
             (dim==="wave"?`<span class="ball sm ${WAVE[r.key]||"grey"}">${esc(r.key)}</span>`:`<span class="chip">${esc(r.key)}</span>`)}</div>
             <div class="track"><div class="fill" style="width:${pct.toFixed(0)}%"></div></div>
-            <div class="v num">遗${r.omission} / 均${r.avg_omission} / 顶${r.max_omission}${hot?'<span class="badge-hot">回补区🔥</span>':""}</div>
+            <div class="v"><div class="num">遗${r.omission} · 均${r.avg_omission} · 顶${r.max_omission}</div>${hot?'<div class="badge-hot">回补区🔥</div>':""}</div>
           </div>`}).join("")}</div>`}).join("");
   }catch(e){$("#om-grid").innerHTML=`<p class="muted small">加载失败: ${esc(e.message)}</p>`}
 }
@@ -688,8 +688,8 @@ $("#pd-go").onclick=doPredict;
 
 /* ================= 挑码 ================= */
 const PK_GROUPS={
-  zodiac:{title:"生肖",items:["鼠","牛","虎","兔","龍","蛇","馬","羊","猴","雞","狗","豬"]},
-  six_conflict:{title:"六冲(选1个=该生肖+对冲生肖)",items:["鼠","牛","虎","兔","龍","蛇","馬","羊","猴","雞","狗","豬"]},
+  zodiac:{title:"生肖",items:["鼠","牛","虎","兔","龙","蛇","马","羊","猴","鸡","狗","猪"]},
+  six_conflict:{title:"六冲(选1个=该生肖+对冲生肖)",items:["鼠","牛","虎","兔","龙","蛇","马","羊","猴","鸡","狗","猪"]},
   wave:{title:"波色",items:["红","蓝","绿"]},
   wuxing:{title:"五行",items:["金","木","水","火","土"]},
   family_wild:{title:"家野",items:["家","野"]},
