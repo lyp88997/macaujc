@@ -159,8 +159,14 @@ def composite_scores(conn, scope: str, window: int):
         # 2) 遗漏压力 (30 分)
         om = feat["num_omission"].get(key)
         avg = feat["num_avg"].get(key)
-        if om is not None and avg:
+        if om is not None and avg is not None and avg > 0:
             omit_norm = min(om / avg, 2.0) / 2.0
+        elif om is not None and om > 0:
+            # 从未出现过的号码没有历史间隔, 用该 scope 的理论平均间隔
+            # 作为基准, 避免遗漏压力被错误压成 0。
+            slots = 6 if scope == "normal" else 1
+            expected_avg = max(1.0, (49.0 / slots) - 1.0)
+            omit_norm = min(om / expected_avg, 2.0) / 2.0
         else:
             omit_norm = 0.0
 
@@ -242,8 +248,6 @@ def predict(conn, mode: str, scope: str, count: int, window: int) -> Dict:
     items_raw, feat = composite_scores(conn, scope, window)
 
     if mode == "hot":
-        items_raw.sort(key=lambda x: -x["feat"]["appear_count"])
-        tiebreak = lambda x: -x["score"]  # noqa: E731
         items_raw.sort(key=lambda x: (x["feat"]["appear_count"], x["score"]), reverse=True)
     elif mode == "cold":
         items_raw.sort(key=lambda x: (x["feat"]["appear_count"], x["score"]))
@@ -298,12 +302,18 @@ def pick_sets(conn, count: int, pool: str, filters: Optional[Dict], window: int)
     pool_upper = (pool or "composite").strip().lower()
     if pool_upper == "all":
         pool_nums = sorted(int(x) for x in remaining)
+        normal_nums = pool_nums
+        special_nums = pool_nums
     else:
-        scope = "special"
-        pred = predict(conn, pool_upper if pool_upper in MODES else "composite",
-                       scope, 49, window)
-        pool_nums = [int(it["number"]) for it in pred["items"] if int(it["number"]) in
-                     set(int(x) for x in remaining)]
+        mode = pool_upper if pool_upper in MODES else "composite"
+        allowed = set(int(x) for x in remaining)
+        normal_pred = predict(conn, mode, "normal", 49, window)
+        special_pred = predict(conn, mode, "special", 49, window)
+        normal_nums = [int(it["number"]) for it in normal_pred["items"]
+                       if int(it["number"]) in allowed]
+        special_nums = [int(it["number"]) for it in special_pred["items"]
+                        if int(it["number"]) in allowed]
+        pool_nums = normal_nums
 
     # 分配: 前 count-1 个来自平码池, 第 count 个来自特码推荐(号码不重复)
     n_front = max(0, count - 1)
@@ -312,7 +322,7 @@ def pick_sets(conn, count: int, pool: str, filters: Optional[Dict], window: int)
     pool_nums = list(dict.fromkeys(pool_nums))  # 保序去重
     front = pool_nums[:n_front]
     # 特码推荐: 从剩余号码中取分最高者; 若池太小则从前 6 中取未占用的兜底
-    rest = [x for x in pool_nums if x not in front]
+    rest = [x for x in special_nums if x not in front]
     special = rest[0] if rest else None
     if special is None and count > 0:
         for x in reversed(front):

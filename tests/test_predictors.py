@@ -46,6 +46,15 @@ assert [it["number"] for it in p["items"]] == [it["number"] for it in p2["items"
 assert [it["score"] for it in p["items"]] == [it["score"] for it in p2["items"]]
 print("day-seed stability OK")
 
+# 无历史号码也应获得遗漏压力, 不能因 avg=None 被错误压成 0
+_, boundary_feat = predictors.composite_scores(conn, "special", 100)
+unseen = [x for x in boundary_feat["num_omission"] if boundary_feat["appear_count"].get(int(x), 0) == 0]
+assert unseen
+boundary_scores, _ = predictors.composite_scores(conn, "special", 100)
+by_num = {x["number"]: x for x in boundary_scores}
+assert all(by_num[x]["feat"]["omit_norm"] > 0 for x in unseen)
+print("unseen omission pressure OK")
+
 # --- hot / cold / omission ---
 ph = predictors.predict(conn, "hot", "special", 5, 100)
 # 1-20 各出现 3 次(60期循环) → 全部并列, tiebreak 用 score
@@ -90,4 +99,16 @@ s3 = pk3["sets"][0]
 RED = {1,2,7,8,12,13,18,19,23,24,29,30,34,35,40,45,46}
 assert set(int(x) for x in s3) <= RED, s3
 print("pick hot+wave OK:", s3)
+
+# pick 的前六位按平码 scope, 末位按特码 scope; 两个池都必须遵守筛选条件
+normal_pred = predictors.predict(conn, "composite", "normal", 49, 100)
+special_pred = predictors.predict(conn, "composite", "special", 49, 100)
+pk_scope = predictors.pick_sets(conn, 7, "composite", None, 100)
+assert pk_scope["sets"]
+assert pk_scope["sets"][0][:6] == [x["number"] for x in normal_pred["items"][:6]]
+assert pk_scope["sets"][0][-1] == next(
+    x["number"] for x in special_pred["items"] if x["number"] not in pk_scope["sets"][0][:6]
+)
+print("pick normal/special scope separation OK")
+
 print("ALL PREDICTOR TESTS PASSED")
