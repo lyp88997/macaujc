@@ -131,18 +131,19 @@ tr:hover td{background:rgba(255,255,255,.03)}
 /* ===== 条形 ===== */
 .bar-row{display:flex;align-items:center;gap:10px;padding:6px 0}
 .bar-label{width:64px;display:flex;align-items:center;gap:6px;flex:none;font-size:13px}
-.bar-track{flex:1;max-width:460px;height:16px;background:rgba(255,255,255,.05);border-radius:8px;overflow:hidden}
+.bar-track{flex:1;max-width:380px;height:16px;background:rgba(255,255,255,.05);border-radius:8px;overflow:hidden}
 .bar-fill{height:100%;border-radius:8px;background:linear-gradient(90deg,var(--acc),var(--acc2));
   box-shadow:0 0 10px rgba(109,124,255,.4);transition:width .5s ease}
-.bar-val{width:158px;white-space:nowrap;flex:none;font-size:12px;color:var(--dim);text-align:right}
+.bar-val{width:222px;white-space:nowrap;flex:none;font-size:11.5px;color:var(--dim);text-align:right}
 
 /* ===== 遗漏 ===== */
 .om-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
 .om-item{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:13px}
 .om-item .k{width:52px;flex:none;display:flex;align-items:center;gap:6px}
-.om-item .track{flex:1;max-width:320px;height:12px;background:rgba(255,255,255,.05);border-radius:5px;overflow:hidden}
+.om-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.om-item .track{width:100%;max-width:340px;height:12px;background:rgba(255,255,255,.05);border-radius:5px;overflow:hidden}
 .om-item .fill{height:100%;background:linear-gradient(90deg,#ffb14d,#ff4d5e);border-radius:5px}
-.om-item .v{width:150px;display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none;text-align:right;color:var(--dim);font-size:11.5px}
+.om-vals{font-size:11px;color:var(--dim);line-height:1.55}
 .badge-hot{font-size:10px;color:#ffd280;border:1px solid rgba(255,177,77,.45);border-radius:6px;padding:1px 5px;margin-left:4px}
 
 /* ===== 预测卡 ===== */
@@ -229,6 +230,11 @@ tr:hover td{background:rgba(255,255,255,.03)}
   .ball.special{outline-offset:1.5px}
   .zlabel{font-size:3vw;line-height:1.2}
   #ov-balls .zlabel{font-size:3.5vw}
+  /* 统计/遗漏完整词标注: 手机端色条让宽, 数值行可换行 */
+  .bar-row{flex-wrap:wrap;row-gap:2px}
+  .bar-track{max-width:none;min-width:56px}
+  .bar-val{width:auto;font-size:10px}
+  .om-vals{font-size:10px}
   .ball-col{gap:4px}
 }
 </style>
@@ -537,7 +543,7 @@ async function loadMeta(sp){
     $("#ov-wave").innerHTML=st.items.map(it=>`
       <div class="bar-row"><div class="bar-label"><span class="ball sm ${WAVE[it.key]||"grey"}">${esc(it.key)}</span></div>
       <div class="bar-track"><div class="bar-fill" style="width:${(it.count/tot*100).toFixed(1)}%"></div></div>
-      <div class="bar-val num">${it.count}次 · ${(it.rate*100).toFixed(0)}% · 遗${it.omission}</div></div>`).join("");
+      <div class="bar-val num">出现${it.count}次 · 频率${(it.rate*100).toFixed(0)}% · 当前遗漏${it.omission}</div></div>`).join("");
     const d=await api("/api/draws?limit=1");
     const it=d.items?.[0];
     if(it){const i6=6;
@@ -611,11 +617,11 @@ async function doStats(){
     $("#st-bars").innerHTML=st.items.map(it=>{
       let label;
       if(DIM_KIND[dim]==="wave")label=`<span class="ball sm ${WAVE[it.key]||"grey"}">${esc(it.key)}</span>`;
-      else if(DIM_KIND[dim]==="num")label=`<span class="ball sm">${esc(it.key)}</span>`;
+      else if(DIM_KIND[dim]==="num")label=`<span class="ball sm ${WAVE[waveClassOf(it.key)]||"grey"}">${esc(it.key)}</span>`;
       else label=`<span class="chip">${esc(it.key)}</span>`;
       return `<div class="bar-row"><div class="bar-label">${label}</div>
         <div class="bar-track"><div class="bar-fill" style="width:${(it.count/max*100).toFixed(1)}%"></div></div>
-        <div class="bar-val num">${it.count}次 · ${(it.rate*100).toFixed(1)}% · 遗${it.omission}</div></div>`}).join("");
+        <div class="bar-val num">出现${it.count}次 · 频率${(it.rate*100).toFixed(1)}% · 当前遗漏${it.omission}</div></div>`}).join("");
   }catch(e){$("#st-bars").innerHTML=`<p class="muted small">加载失败: ${esc(e.message)}</p>`}
 }
 $("#st-go").onclick=doStats;
@@ -634,8 +640,10 @@ async function doOmit(){
           const hot=r.avg_omission&&r.omission>=r.avg_omission*1.5;
           return `<div class="om-item"><div class="k">${dim==="number"?`<span class="ball sm ${WAVE[waveClassOf(r.key)]||"grey"}">${esc(r.key)}</span>`:
             (dim==="wave"?`<span class="ball sm ${WAVE[r.key]||"grey"}">${esc(r.key)}</span>`:`<span class="chip">${esc(r.key)}</span>`)}</div>
-            <div class="track"><div class="fill" style="width:${pct.toFixed(0)}%"></div></div>
-            <div class="v"><div class="num">遗${r.omission} · 均${r.avg_omission} · 顶${r.max_omission}</div>${hot?'<div class="badge-hot">回补区🔥</div>':""}</div>
+            <div class="om-main">
+              <div class="track"><div class="fill" style="width:${pct.toFixed(0)}%"></div></div>
+              <div class="om-vals">当前遗漏${r.omission} · 平均遗漏${r.avg_omission} · 历史最大遗漏${r.max_omission}${hot?' <span class="badge-hot">回补区🔥</span>':""}</div>
+            </div>
           </div>`}).join("")}</div>`}).join("");
   }catch(e){$("#om-grid").innerHTML=`<p class="muted small">加载失败: ${esc(e.message)}</p>`}
 }
