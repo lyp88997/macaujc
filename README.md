@@ -111,8 +111,5 @@ tasks/ reports/ context/   AON 批次记录/任务报告/状态外置
 
 ## 节点与链接
 
-- 🌐 澳门公网：http://45.202.246.39
-- 🐳 容器节点：`http://10.5.0.2:8787`（内网）
-- 📦 仓库：https://github.com/lyp88997/macaujc
+
 - 📱 TG：https://t.me/mzlpin
-- 📊 Komari 服务器状态：https://tz.mzlp.eu.org/
