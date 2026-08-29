@@ -290,10 +290,10 @@ tr:hover td{background:var(--row-hover)}
     <div class="nav-title">功能模块</div>
     <a data-page="overview" class="on"><span class="ico">📊</span>数据总览</a>
     <a data-page="draws"><span class="ico">📜</span>历史开奖</a>
-    <a data-page="stats"><span class="ico">📈</span>统计分析</a>
     <a data-page="omit"><span class="ico">⏳</span>遗漏监控</a>
     <a data-page="predict"><span class="ico">🎯</span>预测推荐</a>
     <a data-page="picker"><span class="ico">🎛️</span>挑码筛选</a>
+    <a data-page="stats"><span class="ico">📈</span>统计分析</a>
   </nav>
 
   <main>
@@ -382,11 +382,11 @@ tr:hover td{background:var(--row-hover)}
 
     <!-- ═══ 预测 ═══ -->
     <section class="page" id="page-predict">
-      <div class="page-head"><h2>预测推荐</h2><p>透明可解释打分：recency 40 + 遗漏压力 30 + 维度回补 15 + 日种子 15（当天固定）</p></div>
+      <div class="page-head"><h2>预测推荐</h2><p>透明可解释打分：权重40 + 遗漏压力 30 + 维度回补 15 + 日种子 15（当天固定）</p></div>
       <div class="controls">
         <label>模式</label>
-        <select id="pd-mode"><option value="composite">综合 composite</option><option value="hot">热号 hot</option>
-          <option value="cold">冷号 cold</option><option value="omission">遗漏 omission</option></select>
+        <select id="pd-mode"><option value="composite">综合</option><option value="hot">热号</option>
+          <option value="cold">冷号</option><option value="omission">遗漏</option></select>
         <label>范围</label>
         <select id="pd-scope"><option value="special">特码</option><option value="normal">平码(含特)</option></select>
         <label>数量</label><input type="number" id="pd-count" value="10" min="5" max="20" style="width:64px">
@@ -413,21 +413,7 @@ tr:hover td{background:var(--row-hover)}
         <div class="result-balls" id="pk-remaining"></div>
         <p class="small muted" id="pk-count"></p>
       </div>
-      <div class="grid g2">
-        <div class="card" id="pk-panel"></div>
-        <div class="card">
-          <div class="card-head"><h3>🎛️ 智能组号 <span class="tag">前6平码 + 末位特码</span></h3>
-            <button class="btn ghost" id="pk-copy-set">📋 复制组号</button></div>
-          <div class="controls" style="margin:0 0 10px">
-            <label>推荐池</label>
-            <select id="pk-pool"><option value="composite">综合分</option><option value="hot">热号</option>
-              <option value="cold">冷号</option><option value="all">全池</option></select>
-            <button class="btn" id="pk-gen">生成 (6+1)</button>
-          </div>
-          <div class="result-balls" id="pk-set"></div>
-          <p class="small muted" id="pk-note"></p>
-        </div>
-      </div>
+      <div class="card" id="pk-panel" style="margin-bottom:14px"></div>
     </section>
   </main>
 </div>
@@ -452,11 +438,14 @@ async function copyText(txt,msg){
     ta.select();try{document.execCommand("copy")}catch(_){}ta.remove()}
   toast(msg||("已复制: "+txt))}
 document.addEventListener("click",e=>{
+  const ca=e.target.closest("[data-copyall]");
+  if(ca){const all=(PK_LAST&&PK_LAST.length?PK_LAST:(PD_LAST&&PD_LAST.items?PD_LAST.items.map(x=>x.number):[]));
+    all.length?copyText(all.join(" "),"已复制全部号码"):toast("先选筛选条件");return;}
   const el=e.target.closest("[data-copy]");
   if(el)copyText(el.dataset.copy,"已复制: "+el.dataset.copy)});
-function ball(n,{sm,lg,special,wave,copy,label}={}){const w=wave&&WAVE[wave]?WAVE[wave]:"grey";
+function ball(n,{sm,lg,special,wave,copy,copyAll,label}={}){const w=wave&&WAVE[wave]?WAVE[wave]:"grey";
   const cls=`ball ${sm?"sm":""} ${lg?"lg":""} ${special?"special":""} ${w} ${copy?"clickable":""}`;
-  const b=`<span class="${cls}"${copy?` data-copy="${esc(n)}" title="点击复制"`:""}>${esc(n)}</span>`;
+  const b=`<span class="${cls}"${copy?` data-copy="${esc(n)}" title="点击复制"`:""}${copyAll?` data-copyall="1" title="点击复制全部号码"`:""}>${esc(n)}</span>`;
   return label!==undefined&&label!==""&&label!==null?`<span class="ball-col">${b}<span class="zlabel">${esc(label)}</span></span>`:b}
 async function api(path,opts){
   if(MOCK) return mockApi(path,opts);
@@ -490,7 +479,6 @@ function mockApi(path){
   if(path.startsWith("/api/predict"))return MOCK_DATA.hot;
   if(path.startsWith("/api/omit"))return{number:[],wave:[],zodiac:[],tail:[],head:[],wuxing:[]};
   if(path.startsWith("/api/filter"))return{union:{},remaining:[],count:0};
-  if(path.startsWith("/api/pick"))return{sets:[["07","12","18","23","29","34","40"]],strategy_note:"演示数据"};
   return{};
 }
 
@@ -705,16 +693,16 @@ async function doPredict(){
     const items=r.items||[];
     if(items.length){
       $("#pd-combo-card").style.display="block";
-      $("#pd-combo-balls").innerHTML=items.map(it=>ball(it.number,{copy:true,wave:it.attrs?.wave})).join("");
+      $("#pd-combo-balls").innerHTML=items.map(it=>ball(it.number,{copyAll:true,wave:it.attrs?.wave})).join("");
       const nums=items.map(it=>it.number).join(" ");
-      $("#pd-combo-meta").textContent=`${r.mode} · ${r.scope==="special"?"特码":"平码"} · window ${r.window} · ${items.length} 个号码（单击号码可复制）`;
+      $("#pd-combo-meta").textContent=`${r.mode} · ${r.scope==="special"?"特码":"平码"} · window ${r.window} · ${items.length} 个号码（单击号码复制全部）`;
     }else{
       $("#pd-combo-card").style.display="none";
     }
     grid.innerHTML=items.map(it=>`
       <div class="pred-card">
         <div class="top"><span class="rank num">#${it.rank}</span>
-          ${ball(it.number,{lg:true,wave:it.attrs?.wave})}
+          ${ball(it.number,{lg:true,copyAll:true,wave:it.attrs?.wave})}
           <div class="score"><b class="num">${it.score}</b><span>综合分</span></div></div>
         <div class="attrs">
           <span class="chip ${({"红":"red","蓝":"blue","绿":"green"}[it.attrs?.wave])||""}">${esc(it.attrs?.wave||"-")}波</span>
@@ -754,7 +742,7 @@ function initPicker(){
   const panel=$("#pk-panel");
   if(panel.dataset.init)return;
   panel.dataset.init="1";
-  panel.innerHTML=`<h3>🎚️ 筛选条件 <button class="btn ghost" style="float:right;padding:4px 10px;font-size:12px" id="pk-clear">清空</button></h3>`+
+  panel.innerHTML=`<h3>🎚️ 筛选条件 <button class="btn ghost" style="float:right;padding:9px 18px;font-size:13.5px;font-weight:600" id="pk-clear">清空</button></h3>`+
     Object.entries(PK_GROUPS).map(([g,cfg])=>`
       <div class="fgroup"><div class="ft">${cfg.title}</div><div class="chips" data-g="${g}">
         ${cfg.items.map(i=>`<span class="fchip" data-g="${g}" data-v="${i}">${i}</span>`).join("")}
@@ -778,31 +766,20 @@ function initPicker(){
   $("#pk-clear").onclick=()=>{Object.keys(PK_SEL).forEach(k=>delete PK_SEL[k]);
     $$("#pk-panel .fchip").forEach(x=>x.classList.remove("on"));PK_LAST=[];
     $("#pk-remaining").innerHTML="";$("#pk-count").textContent="";$("#pk-count-inline").textContent="";
-    $("#pk-set").innerHTML="";$("#pk-note").textContent="";PK_SET=[];};
+    };
   $("#pk-copy-all").onclick=()=>{PK_LAST.length?copyText(PK_LAST.join(" "),"已复制全部号码"):toast("先选筛选条件")};
-  $("#pk-gen").onclick=genPick;
-  $("#pk-copy-set").onclick=()=>{PK_SET.length?copyText(PK_SET.join(" "),"已复制组号"):toast("先点击生成组号")};
 }
-let PK_LAST=[];let PK_SET=[];
+let PK_LAST=[];
 async function runFilter(){
   const groups=JSON.parse(JSON.stringify(PK_SEL));
   try{
     const r=await apiPost("/api/filter",{groups});
     const rem=r.remaining||[];
     PK_LAST=rem;
-    $("#pk-remaining").innerHTML=rem.map(n=>ball(n,{wave:waveClassOf(n),copy:true})).join("")||`<span class="muted small">无匹配号码（交集为空）</span>`;
-    $("#pk-count").textContent=`命中 ${r.count} 个号码 · 单击号码可复制`;
+    $("#pk-remaining").innerHTML=rem.map(n=>ball(n,{wave:waveClassOf(n),copyAll:true})).join("")||`<span class="muted small">无匹配号码（交集为空）</span>`;
+    $("#pk-count").textContent=`命中 ${r.count} 个号码 · 单击号码复制全部`;
     $("#pk-count-inline").textContent=rem.length?`${r.count} 个`:"";
   }catch(e){$("#pk-count").textContent="筛选失败: "+e.message}
-}
-async function genPick(){
-  try{
-    const r=await apiPost("/api/pick",{count:7,pool:$("#pk-pool").value,filters:JSON.parse(JSON.stringify(PK_SEL))});
-    const set=(r.sets&&r.sets[0])||[];
-    $("#pk-set").innerHTML=set.length?set.map((n,i)=>ball(n,{special:i===6,wave:waveClassOf(n),copy:true})).join(""):`<span class="muted small">池不足，无法组号</span>`;
-    PK_SET=set.map(x=>+x);
-    $("#pk-note").textContent=r.strategy_note||"";
-  }catch(e){$("#pk-note").textContent="组号失败: "+e.message}
 }
 
 /* ================= 启动 ================= */
