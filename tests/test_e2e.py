@@ -60,7 +60,10 @@ try:
     # 1 status
     st, hd, d = get("/api/status")
     assert st == 200 and d["ok"] and d["service"] == "macaujc-predictor"
-    assert d["version"] == "1.0.0"
+    import re as _re, pathlib as _pl
+    _ver = _re.search(r'__version__\s*=\s*"(\d+\.\d+\.\d+)"', _pl.Path(__file__).resolve().parents[1].joinpath("app/server.py").read_text(encoding="utf-8"))
+    assert _ver, "server.py 中未找到 __version__"
+    assert d["version"] == _ver.group(1)
     assert d["last_draw"]["expect"] == "2026003"
     assert d["last_draw"]["codes"] == ["40", "41", "42", "43", "44", "45"]
     assert d["last_draw"]["special"] == "46"
