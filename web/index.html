@@ -167,6 +167,7 @@ button.btn.ghost{background:var(--panel2);border:1px solid var(--border);box-sha
 button.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
 .controls label{font-size:12.5px;color:var(--dim)}
+.ctl-row{display:contents}
 
 /* ===== 表格 ===== */
 table{width:100%;border-collapse:collapse;font-size:13px}
@@ -292,6 +293,7 @@ tr:hover td{background:var(--row-hover)}
   .om-vals{font-size:10px}
   .ball-col{gap:4px}
 }
+@media (max-width:520px){#page-predict .controls{flex-direction:column;align-items:stretch}.ctl-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}#page-predict .ctl-row .btn{flex:1;justify-content:center}}
 </style>
 <script>try{if(localStorage.getItem("mcjc-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
 </head>
@@ -407,14 +409,14 @@ tr:hover td{background:var(--row-hover)}
     <section class="page" id="page-predict">
       <div class="page-head"><h2>预测推荐</h2><p>透明可解释打分：权重40 + 遗漏压力 30 + 维度回补 15 + 日种子 15（当天固定）</p></div>
       <div class="controls">
-        <label>模式</label>
+        <div class="ctl-row"><label>模式</label>
         <select id="pd-mode"><option value="composite">综合</option><option value="hot">热号</option>
           <option value="cold">冷号</option><option value="omission">遗漏</option></select>
         <label>范围</label>
-        <select id="pd-scope"><option value="special">特码</option><option value="normal">平码(含特)</option></select>
-        <label>数量</label><input type="number" id="pd-count" value="10" min="5" max="20" style="width:64px">
+        <select id="pd-scope"><option value="special">特码</option><option value="normal">平码(含特)</option></select></div>
+        <div class="ctl-row"><label>数量</label><input type="number" id="pd-count" value="10" min="5" max="20" style="width:64px">
         <label>窗口</label><select id="pd-win"><option value="50">50期</option><option selected value="100">100期</option><option value="200">200期</option></select>
-        <button class="btn" id="pd-go">生成推荐</button>
+        <button class="btn" id="pd-go">生成推荐</button></div>
       </div>
       <div class="card" id="pd-combo-card" style="margin-bottom:14px;display:none">
         <h3>📋 推荐组合
@@ -463,8 +465,11 @@ async function copyText(txt,msg){
   toast(msg||("已复制: "+txt))}
 document.addEventListener("click",e=>{
   const ca=e.target.closest("[data-copyall]");
-  if(ca){const all=(PK_LAST&&PK_LAST.length?PK_LAST:(PD_LAST&&PD_LAST.items?PD_LAST.items.map(x=>x.number):[]));
-    all.length?copyText(all.join(" "),"已复制全部号码"):toast("先选筛选条件");return;}
+  if(ca){const page=(ca.closest(".page")||{}).id||"";
+    const pk=PK_LAST&&PK_LAST.length?PK_LAST:[];
+    const pd=PD_LAST&&PD_LAST.items?PD_LAST.items.map(x=>x.number):[];
+    const all=page==="page-predict"?(pd.length?pd:pk):(pk.length?pk:pd);
+    all.length?copyText(all.join(" "),"已复制全部号码"):toast(page==="page-predict"?"先生成推荐":"先选筛选条件");return;}
   const el=e.target.closest("[data-copy]");
   if(el)copyText(el.dataset.copy,"已复制: "+el.dataset.copy)});
 function ball(n,{sm,lg,special,wave,copy,copyAll,label}={}){const w=wave&&WAVE[wave]?WAVE[wave]:"grey";
